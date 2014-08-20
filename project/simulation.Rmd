@@ -73,7 +73,6 @@ The proportion `sum(means > ll & means < ul)  / length(means)` of the sample mea
 
 This short note has examined the distribution of sample draws from an exponential population. An empirical analysis of the distribution of sample means, sample variance, and confidence intervals demonstrate that the observed statistics support the theoretical predicted values. The analysis is reproducible as an Rmd document, available at [1].
 
-[1]:  https://github.com/garrinkimmell/stats/project/simulation.Rmd
-
+[1]: https://github.com/garrinkimmell/stats/blob/master/project/simulation.Rmd
 
 

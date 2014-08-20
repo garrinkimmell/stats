@@ -87,4 +87,4 @@ ALL     `r tall`                                ACCEPT H$_0$
 
 This note has performed a simple statistical analysis on the example R `ToothGrowth` data set. We have summarized the distribution of the data and inferred population mean intervals (with 95% confidence) for the two delivery methods. Using a Student t-test, we established (with 95% confidence) that the null hypothesis -- that the difference in population means is 0 -- can be rejected at dosages of 0.5 and 1.0mg; but cannot be rejected at a dose of 2.0mg. Furthermore, in we demonstrated that the null hypothesis cannot be rejected when considering the difference in population means combining all dosage levels. The analysis is reproducible as an Rmd document, available at [1].
 
-[1]: https://github.com/garrinkimmell/stats/project/ToothGrowth.Rmd
+[1]:https://github.com/garrinkimmell/stats/blob/master/project/ToothGrowth.Rmd
