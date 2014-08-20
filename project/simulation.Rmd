@@ -1,0 +1,79 @@
+---
+title: "Statistical Inference Project: Part 1"
+author: "Garrin Kimmell"
+date: "8/15/2014"
+output: 
+  pdf_document:
+    highlight: default
+    fig_width: 4
+    fig_height: 3
+fontsize: 11pt
+geometry: margin=0.20in
+---
+
+
+The note explores the distribution of simulated draws from an exponential distribution, simulating repeated random draws using R.
+
+## Simulation Setup
+
+```{r}
+set.seed(1)
+lambda <- 0.2
+```
+
+Samples are collected using the R `rexp` function, with parameter $\lambda$=`r lambda`. Thus, the population mean is $\frac{1}{\lambda}$, as is the standard deviation.
+
+``` {r, cache=FALSE}
+nosim <- 100000
+n <- 40
+```
+
+We draw `n` samples from this population, and calculate the mean. This process is repeated `nosim` times. 
+
+``` {r, cache=FALSE}
+draws <- replicate(nosim, rexp(n, 0.2))
+means <- apply(draws, MARGIN=2, FUN=mean)
+sds <- apply(draws, MARGIN=2, FUN=sd)
+```
+
+## Analysis of Sample Means and Variance
+
+Below is a histogram of the sample means. A cursory visual examination indicates sample distribution is  approximately normal and centered around the population mean of $\frac{1}{\lambda}$  --- (`r 1/lambda`), indicated by the dotted red line. The actual mean of the `nosim` sample rounds is `r mean(means)`, within `r abs((1/lambda) - mean(means))` of the population mean.
+
+```{r, cache=FALSE,echo=FALSE}
+library(ggplot2)
+qplot(means, binwidth=0.2) +
+  geom_vline(xintercept=mean(means), linetype="dotted", color="red") + 
+  ggtitle('Distribution of the sample means')
+```
+
+The histogram histogram below shows the standard deviation of each round of `n` samples. This plot is approximately normal, with mean indicated by the dotted red line. The calculated mean standard deviation is `r mean(sds)`, within `r abs((1/lambda) - mean(sds))` of the population standard deviation of `r 1/lambda`. 
+
+```{r, cache=FALSE,echo=FALSE}
+qplot(sds, binwidth=0.2) +
+  geom_vline(xintercept=mean(means), linetype="dotted", color="red") + 
+  ggtitle("Distribution of sample standard deviation")
+  # Add a title
+```
+
+The variance of the sample means (the square of the standard error) is theoretically $\sigma^2/n$, where $\sigma$ is the population standard deviation. The actual variance of the sample means `r var(means)` is within `r abs(var(means) - ((1/lambda)^2/n))` of the theoretical variance `r (1/lambda)^2/n`.
+
+## Analysis of Confidence Intervals
+
+Given the sample means, we expect that 95% will fall within the interval $\overline{X} \pm 1.96 \sigma/n$. We can verify this empirically. We calculate the lower and upper bounds for the interval (95% of a normal distribution is $\pm$ 1.96 standard deviations of the mean.)
+
+```{r, cache=FALSE}
+ll <- mean(means) - qnorm(0.975) * (5/sqrt(n))
+ul <- mean(means) + qnorm(0.975) * (5/sqrt(n))
+```
+
+The proportion `sum(means > ll & means < ul)  / length(means)` of the sample means within this interval is `r sum(means > ll & means < ul)  / length(means)`, near the theoretical expected proportion. Repeated simulations with increasing numbers of rounds, (not shown) demonstrate this asymptotically approaches the theoretical expected proportions. 
+
+## Conclusion
+
+This short note has examined the distribution of sample draws from an exponential population. An empirical analysis of the distribution of sample means, sample variance, and confidence intervals demonstrate that the observed statistics support the theoretical predicted values. The analysis is reproducible as an Rmd document, available at [1].
+
+[1]:  https://github.com/garrinkimmell/stats/project/simulation.Rmd
+
+
+

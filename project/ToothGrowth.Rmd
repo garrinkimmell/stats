@@ -1,0 +1,90 @@
+---
+title: "ToothGrowth Dataset Analysis"
+author: "Garrin Kimmell"
+date: "August 19, 2014"
+output: 
+  pdf_document:
+    highlight: default
+    fig_width: 3.5
+    fig_height: 3
+fontsize: 11pt
+geometry: margin=0.20in
+---
+
+# Introduction
+
+This note provides a brief analysis of the `ToothGrowth` data set, part of the R `datasets` package. The data set describes the tooth growth response to Vitamin C in ten separate Guinea pigs at doses of 0.5, 1, and 2mg. Responses at each dosage level were measured as delivered as Orange Juice (OJ) or Ascorbic Acid (VC). Sixty total samples are represented. Data collected does not identify individual subjects across dosages and delivery methods. 
+
+# Data Summary
+
+```{r echo=FALSE, results='hide'}
+oj <- ToothGrowth[ToothGrowth$supp == 'OJ', ]
+vc <- ToothGrowth[ToothGrowth$supp == 'VC', ]
+```
+
+The left figure below show histograms of tooth growth responses, separated by dose and delivery method. As to be expected with such a small number of samples (10) per data class, on visual inspection the distribution within a data class does not appear normally distributed. 
+
+The figure below shows the distribution of tooth growth response across delivery method and dosage level. Average tooth growth across all dosage levels for the OJ delivery method is `r mean(oj$len)`mm, with standard deviation `r sd(oj$len)`mm, while for the VC (ascorbic acid) method average growth length was `r mean(vc$len)`mm with standard deviation `r sd(vc$len)`mm.
+
+```{r, echo=FALSE}
+library(ggplot2)
+qplot(ToothGrowth$len, facets= supp ~ dose, data=ToothGrowth, binwidth=1, xlab='Length (mm)', main='Tooth Growth Histogram') + theme(plot.title = element_text(size = rel(1.0)))
+qplot(supp, y=len, data=ToothGrowth, geom=c('boxplot','jitter'), main='Tooth Growth by Supplement and Dose', ylab="Length (mm)", xlab='Supplement', facets=   . ~ dose )  + theme(plot.title = element_text(size = rel(1.0)))
+```
+
+From the figure, it appears that tooth growth is correlated with dosage. A regression analysis will provide further insight into that relationship, but we defer that analysis. It is unclear, however, the relative efficacy of the two delivery methods. The OJ delivery method appears to yield greater tooth growth for lower doses, yet for the 2.0mg dose, the difference in response for the two mechanisms is not clear.
+
+# Confidence Intervals
+
+For each delivery method and dosage pair, we calculate the 95% confidence interval for the population mean. 
+We use the Student t-distribution for our intervals, as we have a low number of samples (10) per group. We inherit the t-distribution's assumptions that the underlying population is Gaussian and iid.
+
+
+```{r, cache=FALSE,echo=FALSE,results='hide'}
+ci <- function (data) {
+  n <- length(data);
+  mn <- mean(data, na.rm=TRUE);
+  s <- sd(data, na.rm=TRUE);
+  interval <- mn + c(-1,1) * qt(0.975, df=n-1) * s / sqrt(n);
+  return(interval)
+}
+  
+cis <- by(ToothGrowth, ToothGrowth$dose,
+          FUN = function (data) by(data$len, data$supp, FUN=ci,simplify=FALSE), simplify=FALSE)
+```
+
+The 95% confidence intervals for the population means using the Student t-distribution are shown below. Intervals are shown by dosage and delivery method. Observe that for at dosages 0.5mg and 1.0mg, the intervals for the two delivery methods are disjoint, while at a dosage of 2.0mg, the intervals overlap.
+
+Dosage      VC                      OJ
+--------  -------------------   ----------------------
+0.5       `r cis[[0.5]]$VC`        `r cis[[0.5]]$OJ`
+1.0       `r cis[[1.0]]$VC`        `r cis[[1.0]]$OJ`
+2.0       `r cis[[2.0]]$VC`        `r cis[[2.0]]$OJ`
+
+
+# Hypothesis Testing
+
+We return to our observation above that the relative response for each of the delivery methods at various dosages is not immediately clear. For the lower dosage levels, it appears that OJ delivery yields a larger growth response than VC, but the difference at the 2.0 mg dosage is not clear. The confidence intervals above seem to confirm this suspicion, but we can formulate a hypothesis and test it using Student's t-test. We can formulate this using the difference between the estimated population mean for OJ ($\mu_{OJ}$) and VC ($\mu_{VC}) at each dosage level. The null hypothesis $H_0$ is that the difference in the population means is zero. The alternative hypothesis $H_a$ is that the difference in the population means is nonzero. We reject the null hypothesis if the 95% confidence interval for the difference between the population means does not contain 0.
+
+Using the R `t.test` function, we can quickly test our hypothesis. A paired T-test is not applicable, because the data set does not identify subjects. Moreover, we do not assume that the variances of the population means are equal.
+
+```{r, echo=FALSE, results='none'}
+t1 <- t.test(len ~ supp, paired=FALSE, var.equal=FALSE, data=ToothGrowth[ToothGrowth$dose == 0.5,])$conf
+t2 <- t.test(len ~ supp, paired=FALSE, var.equal=FALSE, data=ToothGrowth[ToothGrowth$dose == 1.0,])$conf
+t3 <- t.test(len ~ supp, paired=FALSE, var.equal=FALSE, data=ToothGrowth[ToothGrowth$dose == 2.0,])$conf
+tall <- t.test(len ~ supp, paired=FALSE, var.equal=FALSE, data=ToothGrowth)$conf
+```
+
+Dosage   <$\mu_{OJ}$ - $\mu_{VC}$>              Result
+------- -------------------------------------   ------------
+0.5     `r t1`                                  REJECT H$_0$
+1.0     `r t2`                                  REJECT H$_0$
+2.0     `r t3`                                  ACCEPT H$_0$
+ALL     `r tall`                                ACCEPT H$_0$
+
+
+# Conclusion
+
+This note has performed a simple statistical analysis on the example R `ToothGrowth` data set. We have summarized the distribution of the data and inferred population mean intervals (with 95% confidence) for the two delivery methods. Using a Student t-test, we established (with 95% confidence) that the null hypothesis -- that the difference in population means is 0 -- can be rejected at dosages of 0.5 and 1.0mg; but cannot be rejected at a dose of 2.0mg. Furthermore, in we demonstrated that the null hypothesis cannot be rejected when considering the difference in population means combining all dosage levels. The analysis is reproducible as an Rmd document, available at [1].
+
+[1]: https://github.com/garrinkimmell/stats/project/ToothGrowth.Rmd
